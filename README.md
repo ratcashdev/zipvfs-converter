@@ -12,6 +12,10 @@ Pull requests are welcome.
 1. build using java and maven, i.e. `mvn package`
 2. Execute conversion using `java -jar [path_to/repo]/target/zipvfs-converter-1.0-SNAPSHOT.jar [yourNDSFileHere]`
 
+##read
+
+. Check using `sqlite3 [yourNDSFileHere].sqlite .dump > output.sql ; cat output.sql`
+
 # TODO
 
 1. Process FreeLists
