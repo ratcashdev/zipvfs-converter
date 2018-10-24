@@ -8,8 +8,8 @@ import java.util.Arrays;
 public class ZipVfsDataArea {
 	public static final int HEADER_SIZE = 6;
 
-	protected long pageNumber = 0; // ) pageNumber + payloadSize = Slot-Header
-	protected long payloadSize = 0; // )
+	protected long pageNumber; // ) pageNumber + payloadSize = Slot-Header
+	protected long payloadSize; // )
 	protected byte[] data;
 
 	public ZipVfsDataArea(byte[] buffer, int length) {
