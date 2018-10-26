@@ -84,20 +84,20 @@ public class ZipVfsFile {
 	}
 	
 	public boolean findCipherKey(String cipherName, int keyLength) throws NoSuchAlgorithmException, NoSuchPaddingException, InvalidKeyException, IllegalBlockSizeException, BadPaddingException {
-		int iPageMap;
-		int nbPageMaps = this.header.getPageMap().size();
 		CipherKey cipherKey = new CipherKey(keyLength);
 		
-		// TODO resume cracking
-		// 0000 0000 0000 0000 0000 0000 10AB 13AD
-		/*
-		byte[] previousKey = 
-			{ 0x00, 0x00, 0x00, 0x00
-			, 0x00, 0x00, 0x00, 0x00
-			, 0x00, 0x00, 0x00, 0x00
-			, 0x10, (byte) 0xAB, (byte) 0x13, (byte) 0xAD };
-		cipherKey.setKey(previousKey);
-		*/
+		return this.findCipherKey(cipherName, cipherKey);
+	}
+	
+	public boolean findCipherKey(String cipherName, String keyValue) throws NoSuchAlgorithmException, NoSuchPaddingException, InvalidKeyException, IllegalBlockSizeException, BadPaddingException {
+		CipherKey cipherKey = new CipherKey(keyValue);
+		
+		return this.findCipherKey(cipherName, cipherKey);
+	}
+	
+	public boolean findCipherKey(String cipherName, CipherKey cipherKey) throws NoSuchAlgorithmException, NoSuchPaddingException, InvalidKeyException, IllegalBlockSizeException, BadPaddingException {
+		int iPageMap;
+		int nbPageMaps = this.header.getPageMap().size();
 
 		this.cipher = Cipher.getInstance(cipherName);
 		
@@ -115,7 +115,7 @@ public class ZipVfsFile {
 				iPageMap++;
 				
 				if (dataArea.isZLibContent(data)) {
-					System.out.println("test #" + iPageMap + '\t' + cipherKey.getKeyToString());
+					System.out.println("test #" + iPageMap + '\t' + cipherName + '\t' + cipherKey.getKeyToString());
 				} else {
 					break;
 				}

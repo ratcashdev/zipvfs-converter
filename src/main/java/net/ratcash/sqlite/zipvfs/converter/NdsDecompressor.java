@@ -21,14 +21,28 @@ public class NdsDecompressor {
 	public static void main(String[] args) {
 		System.out.println("specs: http://www.sqlite.org/zipvfs/doc/trunk/www/fileformat.wiki\n");
 
+		// fixed block size: Blowfish AES RSA DES RC2
+		// candidate: RC4 ARCFOUR
+
+		String filepath = args[0];
+		String cipherName = "RC4";
+		String cipherKey = "00000000000000000000000000000000";
+		
+		switch (args.length) {
+		case 3:
+			cipherKey = args[2];
+		case 2: 
+			cipherName = args[1];
+		}
+
 		try {
-			new NdsDecompressor().decodeNDS(args[0]);
+			new NdsDecompressor().decodeNDS(filepath, cipherName, cipherKey);
 		} catch (IOException | DataFormatException ex) {
 			Logger.getLogger(NdsDecompressor.class.getName()).log(Level.SEVERE, null, ex);
 		}
 	}
 
-	public void decodeNDS(String filepath) throws FileNotFoundException, IOException, DataFormatException {
+	public void decodeNDS(String filepath, String cipherName, String cipherKey) throws FileNotFoundException, IOException, DataFormatException {
 		File dbFile = new File(filepath);
 		String convertedFile = dbFile.getAbsolutePath() + ".sqlite";
 		
@@ -41,10 +55,7 @@ public class NdsDecompressor {
 
 			if (!zipvfs.isReadable()) {
 				try {
-					// fixed black size: Blowfish AES RSA DES
-					// to validate: RC2
-					// candidate: RC4 ARCFOUR
-					zipvfs.findCipherKey("RC4", 16);
+					zipvfs.findCipherKey(cipherName, cipherKey);
 				} catch (InvalidKeyException | NoSuchAlgorithmException | NoSuchPaddingException
 						| IllegalBlockSizeException | BadPaddingException e) {
 					e.printStackTrace();
