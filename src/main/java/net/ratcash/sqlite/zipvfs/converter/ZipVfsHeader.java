@@ -4,10 +4,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
-/**
- * adheres to specs on
- * http://www.sqlite.org/zipvfs/doc/trunk/www/fileformat.wiki
- */
 public class ZipVfsHeader {
 	public static final int SIZE = 200; // 0xC8
 	public static final int ZIPVFS_START = 100; // 0x64

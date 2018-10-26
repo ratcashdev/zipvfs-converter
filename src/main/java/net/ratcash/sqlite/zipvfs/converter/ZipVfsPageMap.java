@@ -1,9 +1,5 @@
 package net.ratcash.sqlite.zipvfs.converter;
 
-/**
- * adheres to specs on
- * http://www.sqlite.org/zipvfs/doc/trunk/www/fileformat.wiki
- */
 public class ZipVfsPageMap {
 	public static final int SIZE = 8;
 

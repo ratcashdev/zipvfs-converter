@@ -2,13 +2,10 @@ package net.ratcash.sqlite.zipvfs.converter;
 
 import java.util.Arrays;
 
-/**
- *
- */
 public class ZipVfsDataArea {
 	public static final int HEADER_SIZE = 6;
 
-	protected long pageNumber; // ) pageNumber + payloadSize = Slot-Header
+	protected long pageNumber; //  ) pageNumber + payloadSize = Slot-Header
 	protected long payloadSize; // )
 	protected byte[] data;
 
@@ -20,6 +17,7 @@ public class ZipVfsDataArea {
 		this.payloadSize = LongBigEndian.toLong(3, 3, buffer) & 0x1FFFF; // last 17 bits only
 
 		this.data = Arrays.copyOfRange(buffer, ZipVfsDataArea.HEADER_SIZE, length);
+		//this.parseBTree();
 	}
 
 	public long getPageNumber() {
@@ -30,20 +28,46 @@ public class ZipVfsDataArea {
 		return this.data;
 	}
 
-	public int getZLibMagicOffset() {
-		int offset = 0; // hard coded
-		// for (int offset = 0; offset < this.data.length -1; offset++) {
-		if ((this.data[offset] & 0xFF) == 0x78) {
-			switch (this.data[offset + 1] & 0xFF) {
+	public boolean isZLibContent(byte... b) {
+		if ((b[0] & 0xFF) == 0x78) {
+			switch (b[1] & 0xFF) {
 			case 0x01: // no compression
 			case 0x9C: // default
 			case 0xDA: // high compression
-				return offset;
+				return true;
 			}
 		}
-		// }
+
+		return false;
+	}
+
+	public boolean isZLibContent() {
+		return this.isZLibContent(this.data);
+	}
+
+	@Deprecated
+	public int getZLibMagicOffset() {
+		for (int offset = 0; offset < this.data.length -1; offset++) {
+			if ((this.data[offset] & 0xFF) == 0x78) {
+				switch (this.data[offset + 1] & 0xFF) {
+				case 0x01: // no compression
+				case 0x9C: // default
+				case 0xDA: // high compression
+					return offset;
+				}
+			}
+		}
 
 		return -1;
+	}
+	
+	@Deprecated
+	public void parseBTree() {
+		long height = LongBigEndian.toLong(0, 2, this.data);
+		long numberOfEntries = LongBigEndian.toLong(2, 2, this.data);
+
+		System.out.println("height: " + height);
+		System.out.println("numberOfEntries: " + numberOfEntries);
 	}
 
 	public String getHexData() {

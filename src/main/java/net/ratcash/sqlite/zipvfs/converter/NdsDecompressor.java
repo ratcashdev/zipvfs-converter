@@ -6,9 +6,15 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.nio.channels.FileChannel;
 import java.nio.file.StandardOpenOption;
+import java.security.InvalidKeyException;
+import java.security.NoSuchAlgorithmException;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.zip.DataFormatException;
+
+import javax.crypto.BadPaddingException;
+import javax.crypto.IllegalBlockSizeException;
+import javax.crypto.NoSuchPaddingException;
 
 public class NdsDecompressor {
 
@@ -25,21 +31,37 @@ public class NdsDecompressor {
 	public void decodeNDS(String filepath) throws FileNotFoundException, IOException, DataFormatException {
 		File dbFile = new File(filepath);
 		String convertedFile = dbFile.getAbsolutePath() + ".sqlite";
-		FileOutputStream outputStream = new FileOutputStream(new File(convertedFile));
-
+		
 		try (FileChannel fc = FileChannel.open(dbFile.toPath(), StandardOpenOption.READ)) {
 			ZipVfsFile zipvfs = new ZipVfsFile();
 
 			zipvfs.parse(fc);
 
-			System.out.println(zipvfs);
+			//System.out.println(zipvfs);
 
-			zipvfs.pipe(outputStream);
-
-			outputStream.close();
-
-			System.out.println("Conversion done.\nOpen '" + convertedFile + "' in your faviroute Sqlite Front-End.");
+			if (!zipvfs.isReadable()) {
+				try {
+					// fixed black size: Blowfish AES RSA DES
+					// to validate: RC2
+					// candidate: RC4 ARCFOUR
+					zipvfs.findCipherKey("RC4", 16);
+				} catch (InvalidKeyException | NoSuchAlgorithmException | NoSuchPaddingException
+						| IllegalBlockSizeException | BadPaddingException e) {
+					e.printStackTrace();
+				}
+			}
+			
+			this.convert(zipvfs, convertedFile);
 		}
+	}
+	
+	public void convert(ZipVfsFile zipvfs, String filepath) throws DataFormatException, IOException {
+		FileOutputStream outputStream = new FileOutputStream(new File(filepath));
+		
+		zipvfs.pipe(outputStream);
+		outputStream.close();
+		
+		System.out.println("Conversion done.\nOpen '" + filepath + "' in your faviroute Sqlite Front-End.");
 	}
 
 }
