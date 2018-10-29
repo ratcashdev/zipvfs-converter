@@ -8,6 +8,7 @@ import java.nio.channels.FileChannel;
 import java.nio.file.StandardOpenOption;
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
+import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.zip.DataFormatException;
@@ -35,17 +36,26 @@ public class NdsDecompressor {
 			cipherName = args[1];
 		}
 
-		try {
-			new NdsDecompressor().decodeNDS(filepath, cipherName, cipherKey);
-		} catch (IOException | DataFormatException ex) {
-			Logger.getLogger(NdsDecompressor.class.getName()).log(Level.SEVERE, null, ex);
+
+		if ("dump".equalsIgnoreCase(cipherName)) {
+			try {
+				new NdsDecompressor().dumpNDS(filepath);
+			} catch (IOException ex) {
+				Logger.getLogger(NdsDecompressor.class.getName()).log(Level.SEVERE, null, ex);
+			}
+		} else {
+			try {
+				new NdsDecompressor().decodeNDS(filepath, cipherName, cipherKey);
+			} catch (IOException | DataFormatException ex) {
+				Logger.getLogger(NdsDecompressor.class.getName()).log(Level.SEVERE, null, ex);
+			}
 		}
 	}
 
 	public void decodeNDS(String filepath, String cipherName, String cipherKey) throws FileNotFoundException, IOException, DataFormatException {
 		File dbFile = new File(filepath);
 		String convertedFile = dbFile.getAbsolutePath() + ".sqlite";
-		String cipherKeyFile = dbFile.getAbsolutePath() + ".txt";
+		String dumpFile = dbFile.getAbsolutePath() + ".txt";
 		
 		try (FileChannel fc = FileChannel.open(dbFile.toPath(), StandardOpenOption.READ)) {
 			ZipVfsFile zipvfs = new ZipVfsFile();
@@ -58,14 +68,29 @@ public class NdsDecompressor {
 				try {
 					zipvfs.findCipherKey(cipherName, cipherKey);
 				} catch (InvalidKeyException | NoSuchAlgorithmException | NoSuchPaddingException
-						| IllegalBlockSizeException | BadPaddingException e) {
-					e.printStackTrace();
+						| IllegalBlockSizeException | BadPaddingException ex) {
+					Logger.getLogger(NdsDecompressor.class.getName()).log(Level.SEVERE, null, ex);
 				}
 			}
 
-			this.dump(zipvfs, cipherKeyFile);
+			this.info(zipvfs, dumpFile);
 			
 			this.convert(zipvfs, convertedFile);
+		}
+	}
+	
+	public void dumpNDS(String filepath) throws IOException {		
+		File dbFile = new File(filepath);
+		String dumpPath = dbFile.getAbsolutePath();
+		
+		try (FileChannel fc = FileChannel.open(dbFile.toPath(), StandardOpenOption.READ)) {
+			ZipVfsFile zipvfs = new ZipVfsFile();
+	
+			zipvfs.parse(fc);
+	
+			//System.out.println(zipvfs);
+	
+			this.dump(zipvfs, dumpPath + ".pkg");
 		}
 	}
 	
@@ -78,13 +103,45 @@ public class NdsDecompressor {
 		System.out.println("Conversion done.\nOpen '" + filepath + "' in your faviroute Sqlite Front-End.");
 	}
 	
-	public void dump(ZipVfsFile zipvfs, String filepath) throws DataFormatException, IOException {
+	public void dump(ZipVfsFile zipvfs, String directorypath) throws IOException {
+		String metapath = directorypath + File.separatorChar + "_meta.txt";
+		File metafile = new File(metapath);
+		
+		if (!metafile.getParentFile().exists()) {
+			metafile.getParentFile().mkdirs(); 
+		}
+		
+		{
+			FileOutputStream outputStream = new FileOutputStream(metafile, false);
+			outputStream.write(zipvfs.toString().getBytes());
+			outputStream.close();
+		}
+		
+		List<ZipVfsPageMap> pages = zipvfs.getHeader().getPageMap();
+		int pageSize = pages.size();
+		String lastPageNumber = String.valueOf(pages.get(pageSize - 1).getDataArea().getPageNumber());
+		String pattern = "%0" + lastPageNumber.length() + "d.dat";
+				
+		for (ZipVfsPageMap page : zipvfs.getHeader().getPageMap()) {
+			ZipVfsDataArea data = page.getDataArea();
+			String filename = String.format(pattern, data.getPageNumber());
+			File outputFile = new File(directorypath + File.separatorChar + filename);
+			
+			FileOutputStream outputStream = new FileOutputStream(outputFile, false);
+			outputStream.write(data.getData());
+			outputStream.close();
+		}
+		
+		System.out.println("Dump done.\nOpen '" + directorypath + "'.");
+	}
+	
+	public void info(ZipVfsFile zipvfs, String filepath) throws DataFormatException, IOException {
 		FileOutputStream outputStream = new FileOutputStream(new File(filepath), false);
 		
 		outputStream.write(zipvfs.toString().getBytes());
 		outputStream.close();
 		
-		System.out.println("Dump done.\nOpen '" + filepath + "' to see the cipher Key.");
+		System.out.println("Info done.\nOpen '" + filepath + "' to see the cipher Key.");
 	}
 
 }

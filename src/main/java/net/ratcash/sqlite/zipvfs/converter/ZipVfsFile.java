@@ -67,6 +67,10 @@ public class ZipVfsFile {
 		}
 	}
 	
+	public ZipVfsHeader getHeader() {
+		return this.header;
+	}
+	
 	public boolean isReadable() {
 		int nbFreeBlocks = 0;
 		
