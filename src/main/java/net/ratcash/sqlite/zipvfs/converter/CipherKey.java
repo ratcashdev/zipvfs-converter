@@ -49,7 +49,14 @@ public class CipherKey {
 	public boolean increment() {
 		int i = this.key.length;
 
-		while (i-->0 && ++this.key[i]==0);
+		while (i-->0) {
+			if (this.key[i] == (byte) 0xFF) {
+				this.key[i] = 0;
+			} else {
+				this.key[i] = (byte) (this.key[i] + 1);
+				return true;
+			}
+		}
 
 		return i != -1;
 	}
