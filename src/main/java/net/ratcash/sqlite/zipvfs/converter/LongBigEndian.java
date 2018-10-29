@@ -29,6 +29,6 @@ public class LongBigEndian {
 		for (int i = from; i < from + len; i++)
 			indices[i - from] = i;
 
-		return toLong(buffer, indices);
+		return LongBigEndian.toLong(buffer, indices);
 	}
 }

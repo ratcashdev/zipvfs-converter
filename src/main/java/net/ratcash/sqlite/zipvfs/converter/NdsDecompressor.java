@@ -45,6 +45,7 @@ public class NdsDecompressor {
 	public void decodeNDS(String filepath, String cipherName, String cipherKey) throws FileNotFoundException, IOException, DataFormatException {
 		File dbFile = new File(filepath);
 		String convertedFile = dbFile.getAbsolutePath() + ".sqlite";
+		String cipherKeyFile = dbFile.getAbsolutePath() + ".txt";
 		
 		try (FileChannel fc = FileChannel.open(dbFile.toPath(), StandardOpenOption.READ)) {
 			ZipVfsFile zipvfs = new ZipVfsFile();
@@ -61,6 +62,8 @@ public class NdsDecompressor {
 					e.printStackTrace();
 				}
 			}
+
+			this.dump(zipvfs, cipherKeyFile);
 			
 			this.convert(zipvfs, convertedFile);
 		}
@@ -73,6 +76,15 @@ public class NdsDecompressor {
 		outputStream.close();
 		
 		System.out.println("Conversion done.\nOpen '" + filepath + "' in your faviroute Sqlite Front-End.");
+	}
+	
+	public void dump(ZipVfsFile zipvfs, String filepath) throws DataFormatException, IOException {
+		FileOutputStream outputStream = new FileOutputStream(new File(filepath), false);
+		
+		outputStream.write(zipvfs.toString().getBytes());
+		outputStream.close();
+		
+		System.out.println("Dump done.\nOpen '" + filepath + "' to see the cipher Key.");
 	}
 
 }

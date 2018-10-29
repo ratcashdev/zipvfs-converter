@@ -10,15 +10,15 @@ import java.util.zip.DataFormatException;
 import java.util.zip.Inflater;
 
 import javax.crypto.BadPaddingException;
-import javax.crypto.Cipher;
 import javax.crypto.IllegalBlockSizeException;
 import javax.crypto.NoSuchPaddingException;
-import javax.crypto.spec.SecretKeySpec;
 
 public class ZipVfsFile {
+	
+	protected static final int BUFFER_SIZE = 1024;
 
 	protected ZipVfsHeader header;
-	protected Cipher cipher;
+	protected CipherKey cipherKey;
 	
 	public void parse(FileChannel fc) throws IOException {
 		int bytesRead;
@@ -84,26 +84,25 @@ public class ZipVfsFile {
 	}
 	
 	public boolean findCipherKey(String cipherName, int keyLength) throws NoSuchAlgorithmException, NoSuchPaddingException, InvalidKeyException, IllegalBlockSizeException, BadPaddingException {
-		CipherKey cipherKey = new CipherKey(keyLength);
+		CipherKey cipherKey = new CipherKey(cipherName, keyLength);
 		
-		return this.findCipherKey(cipherName, cipherKey);
+		return this.findCipherKey(cipherKey);
 	}
 	
 	public boolean findCipherKey(String cipherName, String keyValue) throws NoSuchAlgorithmException, NoSuchPaddingException, InvalidKeyException, IllegalBlockSizeException, BadPaddingException {
-		CipherKey cipherKey = new CipherKey(keyValue);
+		CipherKey cipherKey = new CipherKey(cipherName, keyValue);
 		
-		return this.findCipherKey(cipherName, cipherKey);
+		return this.findCipherKey(cipherKey);
 	}
 	
-	public boolean findCipherKey(String cipherName, CipherKey cipherKey) throws NoSuchAlgorithmException, NoSuchPaddingException, InvalidKeyException, IllegalBlockSizeException, BadPaddingException {
+	public boolean findCipherKey(CipherKey cipherKey) throws NoSuchAlgorithmException, NoSuchPaddingException, InvalidKeyException, IllegalBlockSizeException, BadPaddingException {
 		int iPageMap;
 		int nbPageMaps = this.header.getPageMap().size();
-
-		this.cipher = Cipher.getInstance(cipherName);
+		
+		this.cipherKey = cipherKey;
 		
 		do {
-			SecretKeySpec skeyspec = new SecretKeySpec(cipherKey.getKey(), cipherName);
-			this.cipher.init(Cipher.DECRYPT_MODE, skeyspec);
+			this.cipherKey.prepare();
 			iPageMap = 0;
 			
 			while (iPageMap < nbPageMaps) {
@@ -111,31 +110,31 @@ public class ZipVfsFile {
 				ZipVfsDataArea dataArea = pageMap.getDataArea();
 				byte[] data = dataArea.getData();
 
-				data = this.cipher.doFinal(data);
+				data = this.cipherKey.getCipher().doFinal(data);
 				iPageMap++;
 				
 				if (dataArea.isZLibContent(data)) {
-					System.out.println("test #" + iPageMap + '\t' + cipherName + '\t' + cipherKey.getKeyToString());
+					System.out.println("test #" + iPageMap + '\t' + this.cipherKey.getCipher().getAlgorithm() + '\t' + this.cipherKey.getKeyToString());
 				} else {
 					break;
 				}
 			}
-		} while (iPageMap!=nbPageMaps && cipherKey.increment());
+		} while (iPageMap!=nbPageMaps && this.cipherKey.increment());
 		
 		return iPageMap == nbPageMaps;
 	}
 	
 	public void pipe(OutputStream outputStream) throws DataFormatException, IOException {
 		Inflater inflater = new Inflater(false);
-		byte[] outBytes = new byte[1024];
+		byte[] outBytes = new byte[ZipVfsFile.BUFFER_SIZE];
 
 		for (ZipVfsPageMap pageMap : this.header.getPageMap()) {
 			ZipVfsDataArea dataArea = pageMap.getDataArea();
 			byte[] data = dataArea.getData();
 			
-			if (null != this.cipher) {
+			if (null != this.cipherKey) {
 				try {
-					data = this.cipher.doFinal(data);
+					data = this.cipherKey.getCipher().doFinal(data);
 				} catch (IllegalBlockSizeException | BadPaddingException e) {
 					e.printStackTrace();
 				}
@@ -154,8 +153,12 @@ public class ZipVfsFile {
 
 	public String toString() {
 		StringBuffer sb = new StringBuffer();
-		
+
 		sb.append(this.header.toString()).append('\n');
+		
+		if (null != this.cipherKey) {
+			sb.append(this.cipherKey.toString()).append('\n');
+		}
 		
 		for (ZipVfsPageMap pageMap : this.header.getPageMap()) {
 			sb.append(pageMap.toString()).append('\n');

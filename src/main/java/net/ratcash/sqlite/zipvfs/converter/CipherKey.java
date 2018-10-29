@@ -1,10 +1,19 @@
 package net.ratcash.sqlite.zipvfs.converter;
 
+import java.security.InvalidKeyException;
+import java.security.NoSuchAlgorithmException;
+
+import javax.crypto.Cipher;
+import javax.crypto.NoSuchPaddingException;
+import javax.crypto.spec.SecretKeySpec;
+
 public class CipherKey {
 
+	protected Cipher cipher;
 	protected byte[] key;
 
-	public CipherKey(int length) {
+	public CipherKey(String algorithmName, int length) throws NoSuchAlgorithmException, NoSuchPaddingException {
+		this.cipher = Cipher.getInstance(algorithmName);
 		this.key = new byte[length];
 		
 		for (int i=0; i<this.key.length; i++) {
@@ -12,7 +21,9 @@ public class CipherKey {
 		}
 	}
 
-	public CipherKey(String key) {
+	public CipherKey(String algorithmName, String key) throws NoSuchAlgorithmException, NoSuchPaddingException {
+		this.cipher = Cipher.getInstance(algorithmName);
+		
 		int length = key.length();
 		this.key = new byte[length/2];
 
@@ -20,9 +31,19 @@ public class CipherKey {
 			this.key[i/2] = (byte) ((Character.digit(key.charAt(i), 16) << 4) + Character.digit(key.charAt(i+1), 16));
 		}
 	}
+	
+	public Cipher getCipher() {
+		return this.cipher;
+	}
 
 	public byte[] getKey() {
 		return this.key;
+	}
+	
+	public void prepare() throws InvalidKeyException {
+		SecretKeySpec skeyspec = new SecretKeySpec(this.key, this.cipher.getAlgorithm());
+	
+		this.cipher.init(Cipher.DECRYPT_MODE, skeyspec);
 	}
 
 	public boolean increment() {
@@ -49,8 +70,9 @@ public class CipherKey {
 	public String toString() {
 		StringBuffer sb = new StringBuffer();
 
-		sb.append("==== cipherKey =\n");
-		sb.append("key: ").append(this.getKeyToString()).append('\n');
+		sb.append("===== cipherKey =\n");
+		sb.append("name: ").append(this.cipher.getAlgorithm()).append('\n');
+		sb.append("key:  ").append(this.getKeyToString()).append('\n');
 
 		return sb.toString();
 	}
