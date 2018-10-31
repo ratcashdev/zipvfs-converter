@@ -113,11 +113,12 @@ public class ZipVfsFile {
 				ZipVfsPageMap pageMap = this.header.getZipPageMap(iPageMap);
 				ZipVfsDataArea dataArea = pageMap.getDataArea();
 				byte[] data = dataArea.getData();
+				byte[] sample = { data[0], data[1] };
 
-				data = this.cipherKey.getCipher().doFinal(data);
+				sample = this.cipherKey.getCipher().doFinal(sample);
 				iPageMap++;
 				
-				if (dataArea.isZLibContent(data)) {
+				if (dataArea.isZLibContent(sample)) {
 					System.out.println("test #" + iPageMap + '\t' + this.cipherKey.getCipher().getAlgorithm() + '\t' + this.cipherKey.getKeyToString());
 				} else {
 					break;
