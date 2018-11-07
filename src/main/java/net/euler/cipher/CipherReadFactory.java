@@ -39,10 +39,14 @@ public class CipherReadFactory {
 		}
 	}
 		
-	public CipherRead promote() throws InvalidKeyException, IllegalBlockSizeException, BadPaddingException {
+	public CipherRead promote() {
 		for (CipherRead cipherRead : this.cipherReads) {
-			if (cipherRead.test()) {
-				return cipherRead;
+			try {
+				if (cipherRead.test()) {
+					return cipherRead;
+				}
+			} catch (InvalidKeyException | IllegalBlockSizeException | BadPaddingException ex) {
+				Logger.getLogger(NdsDecompressor.class.getName()).log(Level.SEVERE, null, ex);
 			}
 		}
 		

@@ -1,7 +1,6 @@
 package net.ratcash.sqlite.zipvfs.converter;
 
 import java.io.File;
-import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.nio.channels.FileChannel;
@@ -81,7 +80,7 @@ public class NdsDecompressor {
 		}
 	}
 
-	public void decodeNDS(EnumMap<OPTION, String> config, KeyIterator keyIterator) throws FileNotFoundException, IOException, DataFormatException, NoSuchAlgorithmException, NoSuchPaddingException, InvalidKeyException, IllegalBlockSizeException, BadPaddingException {
+	public void decodeNDS(EnumMap<OPTION, String> config, KeyIterator keyIterator) throws IOException, NoSuchAlgorithmException, NoSuchPaddingException, InvalidKeyException, IllegalBlockSizeException, BadPaddingException, DataFormatException {
 		File dbFile = new File(config.get(OPTION.filePath));
 		String convertedFile = dbFile.getAbsolutePath() + ".sqlite";
 		String dumpFile = dbFile.getAbsolutePath() + ".txt";
