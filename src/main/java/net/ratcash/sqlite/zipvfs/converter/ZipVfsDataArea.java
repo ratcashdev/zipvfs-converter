@@ -27,8 +27,8 @@ public class ZipVfsDataArea {
 	public byte[] getData() {
 		return this.data;
 	}
-
-	public boolean isZLibContent(byte... b) {
+	
+	public static boolean isZLibContent(byte... b) {
 		if ((b[0] & 0xFF) == 0x78) {
 			switch (b[1] & 0xFF) {
 			case 0x01: // no compression
@@ -42,7 +42,15 @@ public class ZipVfsDataArea {
 	}
 
 	public boolean isZLibContent() {
-		return this.isZLibContent(this.data);
+		return ZipVfsDataArea.isZLibContent(this.data);
+	}
+	
+	public static boolean isReadable(byte... b) {
+		return ZipVfsDataArea.isZLibContent(b);
+	}
+
+	public boolean isReadable() {
+		return ZipVfsDataArea.isReadable(this.data);
 	}
 
 	@Deprecated
