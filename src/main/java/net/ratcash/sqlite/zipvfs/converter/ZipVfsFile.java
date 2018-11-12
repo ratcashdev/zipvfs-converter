@@ -120,11 +120,11 @@ public class ZipVfsFile {
 			}
 
 			inflater.setInput(data);
-
+			
 			while (!inflater.finished()) {  
-			    int count = inflater.inflate(outBytes);  
+			    int count = inflater.inflate(outBytes); 
 			    outputStream.write(outBytes, 0, count); 
-			}  
+			}
 
 			inflater.reset();
 		}

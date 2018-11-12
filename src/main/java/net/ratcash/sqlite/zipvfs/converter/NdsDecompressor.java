@@ -7,6 +7,11 @@ import java.nio.channels.FileChannel;
 import java.nio.file.StandardOpenOption;
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.EnumMap;
 import java.util.List;
@@ -83,8 +88,8 @@ public class NdsDecompressor {
 	public void decodeNDS(EnumMap<OPTION, String> config, KeyIterator keyIterator) throws IOException, NoSuchAlgorithmException, NoSuchPaddingException, InvalidKeyException, IllegalBlockSizeException, BadPaddingException, DataFormatException {
 		File dbFile = new File(config.get(OPTION.filePath));
 		String convertedFile = dbFile.getAbsolutePath() + ".sqlite";
-		String dumpFile = dbFile.getAbsolutePath() + ".txt";
-		String keyFile = dbFile.getAbsolutePath() + "-key.txt";
+		String dumpFile = dbFile.getAbsolutePath() + ".log";
+		String keyFile = dbFile.getAbsolutePath() + ".key";
 		
 		try (FileChannel fc = FileChannel.open(dbFile.toPath(), StandardOpenOption.READ)) {
 			ZipVfsFile zipvfs = new ZipVfsFile();
@@ -128,6 +133,13 @@ public class NdsDecompressor {
 			this.info(zipvfs.toString(), dumpFile);
 			
 			this.convert(zipvfs, convertedFile);
+			
+			try {
+				List<String> tableList = this.getTables(convertedFile);
+				String tables = String.join("\n- ", tableList);
+				System.out.println("\ntables: \n- " + tables);
+			} catch (SQLException ignore) {
+			}
 		}
 	}
 	
@@ -139,7 +151,7 @@ public class NdsDecompressor {
 			ZipVfsFile zipvfs = new ZipVfsFile();
 	
 			zipvfs.parse(fc);
-	
+
 			//System.out.println(zipvfs);
 	
 			this.dump(zipvfs, dumpPath + ".pkg");
@@ -193,7 +205,30 @@ public class NdsDecompressor {
 		outputStream.write(content.getBytes());
 		outputStream.close();
 		
-		System.out.println("Info done.\nOpen '" + filepath + "' to see the cipher Key.");
+		System.out.println("New log file: " + filepath);
+	}
+	
+	public List<String> getTables(String filepath) throws SQLException {
+		List<String> tables = new ArrayList<String>();
+        String url = "jdbc:sqlite:" + filepath;
+        Connection conn = DriverManager.getConnection(url);
+        
+        String sql = "SELECT name FROM sqlite_master";
+        tables.add("sqlite_master");
+        
+        try (Statement stmt  = conn.createStatement();
+             ResultSet rs    = stmt.executeQuery(sql)){
+            
+            // loop through the result set
+            while (rs.next()) {
+            	String name = rs.getString("name");
+            	tables.add(name);
+            }
+        } catch (SQLException ex) {
+			Logger.getLogger(NdsDecompressor.class.getName()).log(Level.SEVERE, null, ex);
+        }
+        
+        return tables;
 	}
 
 }

@@ -1,0 +1,91 @@
+language: java
+java:
+  - "1.8"
+addons:
+  apt:
+    update: true
+
+cache:
+  directories:
+    - ./CACHE
+    
+branches:
+  only:
+    - master
+    - beta
+    #- develop
+    - travisci
+
+
+before_install:
+  - ls -al
+
+install:
+  - ls -al
+  ############################################
+  - mvn package assembly:single
+  ############################################
+  - ls -al
+
+before_script:
+  - ls -al ./target
+
+script: 
+  - ls -al
+  ############################################
+  - for f in ./target/*.jar; do mv "$f" "$(echo "$f" | sed s/jar-with-dependencies/full/)"; done
+  - ls -hl ./target/*.jar
+  ############################################
+  - ls -al
+
+before_deploy:
+  - ls -al
+  ############################################
+  - export RELEASE_NAME="${TAG_PREFIX}${TRAVIS_BRANCH}"
+  ############################################
+  - echo "TRAVIS_TAG=$TRAVIS_TAG;"
+  - echo "TAG_PREFIX=$TAG_PREFIX;"
+  - echo "TRAVIS_BRANCH=$TRAVIS_BRANCH;"
+  - "[[ $TRAVIS_TAG ]] || export TRAVIS_TAG=\"${TAG_PREFIX}${TRAVIS_BRANCH}\""
+  - echo "TRAVIS_TAG=$TRAVIS_TAG"
+  ############################################
+  - git config --local user.name "$USER_NAME"
+  - git config --local user.email "$USER_EMAIL"
+  #- git tag -l | grep "^${RELEASE_NAME}\." | tail -n +2 | xargs -n 1 -I_tag h -c 'echo "untag  _tag" ; git tag -d _tag ; git push --delete origin _tag'
+  - git tag --force "$TRAVIS_TAG" $TRAVIS_COMMIT
+  ############################################
+  - ls -hl ./target/*.jar
+  ############################################
+  - ls -al
+
+deploy:
+  - provider: releases
+    api_key: $GITHUB_TOKEN
+    name: "$RELEASE_NAME"
+    #body: "$RELEASE_DESCRIPTION" # https://github.com/travis-ci/dpl/issues/155
+    overwrite: true
+    prerelease: false
+    skip_cleanup: true
+    file_glob: true
+    file: ./target/*.jar
+    on:
+      tags: false
+      branch: 
+        - master
+  - provider: releases
+    api_key: $GITHUB_TOKEN
+    name: "$TRAVIS_TAG"
+    #body: "$RELEASE_DESCRIPTION" # https://github.com/travis-ci/dpl/issues/155
+    overwrite: true
+    prerelease: false
+    skip_cleanup: true
+    file_glob: false
+    file: ./target/*.jar
+    on:
+      tags: true
+
+after_deploy:
+  - ls -al
+
+after_script:
+  - ls -al

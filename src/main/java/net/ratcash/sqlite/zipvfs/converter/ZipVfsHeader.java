@@ -54,9 +54,9 @@ public class ZipVfsHeader {
 	}
 
 	public int countPageMap() {
-		long getPageMapSize = getPageMapSize();
+		long pageMapSize = this.getPageMapSize();
 
-		return Math.toIntExact(getPageMapSize / 64);
+		return 1 + Math.toIntExact(pageMapSize / 64);
 	}
 
 	public void addPageMap(ZipVfsPageMap pageMap) {
